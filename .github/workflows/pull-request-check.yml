@@ -42,7 +42,7 @@ jobs:
     needs: [build, e2e-test-install]
     steps:
       - name: Run e2e tests
-        npm run e2e
+        run: npm run e2e
 
   commitlint:
     steps:
