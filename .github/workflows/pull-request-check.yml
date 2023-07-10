@@ -27,10 +27,16 @@ jobs:
         run: npm run test-ci
 
       - name: Install playwright browsers
-        run: npx playwright install --with-deps
+        run: npx playwright install-deps chromium
+
+      - name: Install xvfb
+        run: |
+          sudo apt update
+          sudo apt install -y xvfb
+          sudo apt-get install chromium-browser
 
       - name: Run e2e tests
-        run: npx playwright test
+        run: xvfb-run npx playwright test
 
       - uses: actions/upload-artifact@v3
         if: always()
@@ -68,6 +74,7 @@ jobs:
         run: |
           npm install conventional-changelog-conventionalcommits
           npm install commitlint@latest
+          npm install @commitlint/config-conventional
       - name: Validate PR commits with commitlint
         # if: github.event_name == 'pull_request'
         run: npx commitlint --from ${{ github.event.pull_request.head.sha }}~${{ github.event.pull_request.commits }} --to ${{ github.event.pull_request.head.sha }} --verbose
