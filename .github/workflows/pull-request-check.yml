@@ -23,47 +23,40 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # - run: npm start
-
-  unit-test:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
       - name: Run unit tests
         run: npm run test-ci
 
-  e2e-test-install:
-    runs-on: ubuntu-latest
-    steps:
       - name: Install playwright browsers
         run: npx playwright install --with-deps
 
-  e2e-test:
-    runs-on: ubuntu-latest
-    needs: [build, e2e-test-install]
-    steps:
       - name: Run e2e tests
         run: npm run e2e
 
   commitlint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Install required dependencies
-        run: |
-          apt update
-          apt install -y sudo
-          sudo apt install -y git curl
-          curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-          sudo DEBIAN_FRONTEND=noninteractive apt install -y nodejs
-      - name: Print versions
-        run: |
-          git --version
-          node --version
-          npm --version
-          npx commitlint --version
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'latest'
+          cache: 'npm'
+      # - name: Install required dependencies
+      #   run: |
+      #     apt update
+      #     apt install -y sudo
+      #     sudo apt install -y git curl
+      #     curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+      #     sudo DEBIAN_FRONTEND=noninteractive apt install -y nodejs
+      # - name: Print versions
+      #   run: |
+      #     git --version
+      #     node --version
+      #     npm --version
+      #     npx commitlint --version
       - name: Install commitlint
         run: |
           npm install conventional-changelog-conventionalcommits
