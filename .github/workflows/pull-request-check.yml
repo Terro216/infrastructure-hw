@@ -1,0 +1,71 @@
+name: Pull request check
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+defaults:
+  runs-on: ubuntu-latest
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build:
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'latest'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # - run: npm start
+
+  unit-test:
+    needs: build
+    steps:
+      - name: Run unit tests
+        run: npm run test-ci
+
+  e2e-test-install:
+    steps:
+      - name: Install playwright browsers
+        run: npx playwright install --with-deps
+
+  e2e-test:
+    needs: [build, e2e-test-install]
+    steps:
+      - name: Run e2e tests
+        npm run e2e
+
+  commitlint:
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install required dependencies
+        run: |
+          apt update
+          apt install -y sudo
+          sudo apt install -y git curl
+          curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+          sudo DEBIAN_FRONTEND=noninteractive apt install -y nodejs
+      - name: Print versions
+        run: |
+          git --version
+          node --version
+          npm --version
+          npx commitlint --version
+      - name: Install commitlint
+        run: |
+          npm install conventional-changelog-conventionalcommits
+          npm install commitlint@latest
+      - name: Validate PR commits with commitlint
+        # if: github.event_name == 'pull_request'
+        run: npx commitlint --from ${{ github.event.pull_request.head.sha }}~${{ github.event.pull_request.commits }} --to ${{ github.event.pull_request.head.sha }} --verbose
