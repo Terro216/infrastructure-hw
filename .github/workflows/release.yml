@@ -13,7 +13,7 @@ on:
 permissions:
   contents: read
   pages: write
-  id-token: write
+  issues: write
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
@@ -22,22 +22,96 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  testing:
+    uses: './.github/workflows/pull-request-check.yml'
+
+  create-changelog-and-issue:
+    needs: [testing]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+
+      - name: Get info
+        id: info
+        shell: bash
+        run: |
+          currentVersion=${{ github.ref_name }}
+          previousVersion==$(git describe --abbrev=0 --tags ${{ github.ref_name }}^)
+          echo "currentVersion=${currentVersion}" >> $GITHUB_OUTPUT
+          echo "previousVersion=${previousVersion}" >> $GITHUB_OUTPUT
+          echo "author=${{ github.actor }}" >> $GITHUB_OUTPUT
+          echo "date=$(date +'%d.%m.%Y %H:%M:%S')" >> $GITHUB_OUTPUT
+
+      - name: Create CHANGELOG
+        id: changelog
+        uses: ardalanamini/auto-changelog@v4
         with:
-          # Upload entire repository
-          path: '.'
+          semver: false
+
+      - name: Create Release Issue
+        id: issue
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.info.outputs.currentVersion }}
+          LASTVERSION: ${{ steps.info.outputs.previousVersion }}
+          DATE: ${{ steps.info.outputs.date }}
+          AUTHOR: ${{ steps.info.outputs.author }}
+          CHANGELOG: ${{ steps.changelog.outputs.changelog }}
+        with:
+          filename: .github/ISSUE_TEMPLATE.md
+          update_existing: true
+          search_existing: all
+          assignees: ${{ github.actor }}
+    outputs:
+      issueNumber: ${{ steps.issue.outputs.number }}
+
+  build-and-deploy:
+    needs: [testing]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Create release branch
+        shell: bash
+        run: |
+          git checkout -b release:${{ github.ref_name }}
+          git push -u origin release:${{ github.ref_name }}
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'latest'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: build
+
+  close-issue:
+    needs: [testing, create-changelog-and-issue, build-and-deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add link to pages
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ needs.release.outputs.issueNumber }}
+          body: |
+            Ссылка на сайт: https://Terro216.github.io/infrastructure-hw/
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Close Issue
+        uses: peter-evans/close-issue@v3
+        with:
+          issue-number: ${{ needs.release.outputs.issueNumber }}
+          comment: Issue successfully closed
