@@ -5,8 +5,8 @@ name: Pull request check
 on:
   pull_request:
     types: [opened, reopened, synchronize]
+  workflow_call:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,6 +29,9 @@ jobs:
       - name: Run unit tests
         run: npm run test-ci
 
+      - name: Lint (ESLint)
+        run: npm run lint
+
       - name: Install playwright browsers
         run: npx playwright install-deps chromium
 
@@ -50,21 +53,24 @@ jobs:
 
   commitlint:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 'latest'
           cache: 'npm'
+
       - name: Install commitlint
         run: |
           npm install conventional-changelog-conventionalcommits
           npm install commitlint@latest
           npm install @commitlint/config-conventional
+
       - name: Validate PR commits with commitlint
-        # if: github.event_name == 'pull_request'
         run: npx commitlint --from ${{ github.event.pull_request.head.sha }}~${{ github.event.pull_request.commits }} --to ${{ github.event.pull_request.head.sha }} --verbose
