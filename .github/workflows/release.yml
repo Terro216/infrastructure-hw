@@ -1,10 +1,10 @@
 # Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+name: Create release
 
 on:
-  # Runs on pushes targeting the default branch
   push:
-    branches: 'none' #['master']
+    tags:
+      - v*
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -26,6 +26,48 @@ jobs:
     uses: './.github/workflows/pull-request-check.yml'
 
   create-changelog-and-issue:
+    needs: [testing]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Get info
+        id: info
+        shell: bash
+        run: |
+          currentVersion=${{ github.ref_name }}
+          previousVersion==$(git describe --abbrev=0 --tags ${{ github.ref_name }}^)
+          echo "currentVersion=${currentVersion}" >> $GITHUB_OUTPUT
+          echo "previousVersion=${previousVersion}" >> $GITHUB_OUTPUT
+          echo "author=${{ github.actor }}" >> $GITHUB_OUTPUT
+          echo "date=$(date +'%d.%m.%Y %H:%M:%S')" >> $GITHUB_OUTPUT
+
+      - name: Create CHANGELOG
+        id: changelog
+        uses: ardalanamini/auto-changelog@v4
+        with:
+          semver: false
+
+      - name: Create Release Issue
+        id: issue
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.info.outputs.currentVersion }}
+          LASTVERSION: ${{ steps.info.outputs.previousVersion }}
+          DATE: ${{ steps.info.outputs.date }}
+          AUTHOR: ${{ steps.info.outputs.author }}
+          CHANGELOG: ${{ steps.changelog.outputs.changelog }}
+        with:
+          filename: .github/ISSUE_TEMPLATE.md
+          update_existing: true
+          search_existing: all
+          assignees: ${{ github.actor }}
+    outputs:
+      issueNumber: ${{ steps.issue.outputs.number }}
+
+  build-and-deploy:
     needs: [testing]
     runs-on: ubuntu-latest
     steps:
