@@ -4,7 +4,7 @@ name: Create release
 on:
   push:
     tags:
-      - v*
+      - 'v[0-9]+'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -64,6 +64,15 @@ jobs:
           update_existing: true
           search_existing: all
           assignees: ${{ github.actor }}
+
+      - name: Add link to tests
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ steps.issue.outputs.number }}
+          body: |
+            Результаты тестов: ${{ needs.testing.outputs.testsUrl }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       issueNumber: ${{ steps.issue.outputs.number }}
 
@@ -104,7 +113,7 @@ jobs:
       - name: Add link to pages
         uses: peter-evans/create-or-update-comment@v3
         with:
-          issue-number: ${{ needs.release.outputs.issueNumber }}
+          issue-number: ${{ needs.create-changelog-and-issue.outputs.issueNumber }}
           body: |
             Ссылка на сайт: https://Terro216.github.io/infrastructure-hw/
         env:
@@ -113,5 +122,5 @@ jobs:
       - name: Close Issue
         uses: peter-evans/close-issue@v3
         with:
-          issue-number: ${{ needs.release.outputs.issueNumber }}
+          issue-number: ${{ needs.create-changelog-and-issue.outputs.issueNumber }}
           comment: Issue successfully closed

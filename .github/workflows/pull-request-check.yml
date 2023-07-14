@@ -6,7 +6,10 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
   workflow_call:
-
+    outputs:
+      testsUrl:
+        description: 'Link to tests'
+        value: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -35,14 +38,8 @@ jobs:
       - name: Install playwright browsers
         run: npx playwright install-deps chromium
 
-      - name: Install xvfb
-        run: |
-          sudo apt update
-          sudo apt install -y xvfb
-          sudo apt-get install chromium-browser
-
       - name: Run e2e tests
-        run: xvfb-run npx playwright test --project=chromium
+        run: npm run e2e
 
       - uses: actions/upload-artifact@v3
         if: always()
