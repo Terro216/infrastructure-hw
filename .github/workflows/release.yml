@@ -42,7 +42,7 @@ jobs:
           echo "currentVersion=${currentVersion}" >> $GITHUB_OUTPUT
           echo "previousVersion=${previousVersion}" >> $GITHUB_OUTPUT
           echo "author=${{ github.actor }}" >> $GITHUB_OUTPUT
-          echo "date=$(date +'%d.%m.%Y %H:%M:%S')" >> $GITHUB_OUTPUT
+          echo "createDate=$(date +'%D %H:%M:%S')" >> $GITHUB_OUTPUT
 
       - name: Create CHANGELOG
         id: changelog
@@ -56,7 +56,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.info.outputs.currentVersion }}
-          DATE: ${{ steps.info.outputs.date }}
+          DATE: ${{ steps.info.outputs.createDate }}
           AUTHOR: ${{ steps.info.outputs.author }}
           CHANGELOG: ${{ steps.changelog.outputs.changelog }}
         with:
