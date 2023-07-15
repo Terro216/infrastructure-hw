@@ -89,7 +89,7 @@ jobs:
         shell: bash
         run: |
           git checkout -B release-${{ github.ref_name }}
-          git push -u origin release-${{ github.ref_name }}
+          git push --force -u origin release-${{ github.ref_name }}
 
       - name: Install Node.js
         uses: actions/setup-node@v3
