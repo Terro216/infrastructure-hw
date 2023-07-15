@@ -37,7 +37,6 @@ jobs:
         shell: bash
         run: |
           currentVersion=${{ github.ref_name }}
-          previousVersion==$(git describe --abbrev=0 --tags ${{ github.ref_name }}^)
           echo "currentVersion=${currentVersion}" >> $GITHUB_OUTPUT
           echo "previousVersion=${previousVersion}" >> $GITHUB_OUTPUT
           echo "author=${{ github.actor }}" >> $GITHUB_OUTPUT
@@ -55,7 +54,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.info.outputs.currentVersion }}
-          LASTVERSION: ${{ steps.info.outputs.previousVersion }}
           DATE: ${{ steps.info.outputs.date }}
           AUTHOR: ${{ steps.info.outputs.author }}
           CHANGELOG: ${{ steps.changelog.outputs.changelog }}
@@ -86,8 +84,8 @@ jobs:
       - name: Create release branch
         shell: bash
         run: |
-          git checkout -b release:${{ github.ref_name }}
-          git push -u origin release:${{ github.ref_name }}
+          git checkout -b release-${{ github.ref_name }}
+          git push -u origin release-${{ github.ref_name }}
 
       - name: Install Node.js
         uses: actions/setup-node@v3

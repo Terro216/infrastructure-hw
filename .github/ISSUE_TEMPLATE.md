@@ -12,7 +12,3 @@ labels: RELEASE
 ## Changelog
 
 {{ env.CHANGELOG }}
-
-## More info
-
-Предыдущая версия: {{ env.LASTVERSION }}
