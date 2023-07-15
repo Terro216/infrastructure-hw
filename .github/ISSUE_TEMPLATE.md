@@ -6,7 +6,7 @@ labels: RELEASE
 
 ## [Release] {{ env.VERSION }}
 
-- Дата: {{ env.DATE | date('D MMMM YYYY') }}
+- Дата: {{ env.DATE }}
 - Автор: {{ env.AUTHOR }}
 
 ## Changelog
