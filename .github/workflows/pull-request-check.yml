@@ -11,6 +11,12 @@ on:
         description: 'Link to tests'
         value: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 jobs:
+  testin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
   build:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
